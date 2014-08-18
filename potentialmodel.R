@@ -6,15 +6,31 @@ getRP <- function(genus, species, envi) {
   require(rJava)
   require(rgeos)
   # Loads occurence data from GBIF and turns it into spatial points. 
-  set.seed(1991)
-  pres <- gbif(genus=genus, species=paste(species, '*', sep=""), ext=extent(envi))
-  pres <- pres[, 7:8]
+  #   set.seed(1991)
+  pres.orig <- gbif(genus=genus, species=paste(species, '*', sep=""), ext=extent(envi))
+  pres <- pres.orig[, c('lat', 'lon')]
   pres <- na.omit(pres)
   pres <- pres[, c(2, 1)]
   pres <- unique(pres)
+  attach(pres)
+  pres <- pres[order(pres[, 'lat'], pres[, 'lon']),]
+  detach(pres)
   pres <- SpatialPoints(pres, bbox=as.matrix(ext))
   print('Species occurence data retrieved')
   
+  realized <- crop(shapefile(paste('C:/Users/ben/Documents/Data/USGS_TreeAtlas/',
+                                   tolower(substr(genus, start=0, stop=4)),
+                                   substr(species, start=0, stop=4), '/',
+                                   tolower(substr(genus, start=0, stop=4)),
+                                   substr(species, start=0, stop=4),'.shp', sep='')), ext)
+  print("Little range found and retrieved")
+  
+#   removes points which are outside realized range. pres are points inside range
+#   in.list <- over(pres, realized)
+#   in.list <- na.omit(in.list)
+#   pres <- pres[rownames(in.list), ]
+  
+  #   
   # makes random background points within extent. seed is 
   set.seed(1991)
   back <- randomPoints(envi, n=75, pres, ext=ext, excludep=TRUE)
@@ -123,35 +139,25 @@ getRP <- function(genus, species, envi) {
   
   all.p <- mx.p
   
-  # code for calculating range filling
-  #realized <- circles(pres, d=25000, lonlat=TRUE)
-  #realized.p <- as(realized, 'SpatialPolygons')
-  realized <- crop(shapefile(paste('C:/Users/ben/Documents/Data/USGS_TreeAtlas/',
-                                   tolower(substr(genus, start=0, stop=4)),
-                                   substr(species, start=0, stop=4), '/',
-                                   tolower(substr(genus, start=0, stop=4)),
-                                   substr(species, start=0, stop=4),'.shp', sep='')), ext)
-  print("Little range found and retrieved")
-  
   # creates raster and images of model results and puts them into a folder
   # based on the species' name and the time (stamp) which the model was ran.
-#   stamp <- Sys.time()
-#   print(stamp)
-#   dir.create(path=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
-#                         sep=""))
-#   
-#   dir.create(path=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
-#                         '/', substr(Sys.time(), start=6, stop=10),'.', 
-#                         substr(stamp, start=12, stop=13), 
-#                         substr(stamp, start=15, stop=16),
-#                         sep=""))
-#   print('Directory Made')
-#   
-#   write.csv(pres, file=paste('C:/Users/ben/Documents/Data/Output/', genus, 
-#                              species, '/', substr(Sys.time(), start=6, stop=10),
-#                              '.', substr(stamp, start=12, stop=13), 
-#                              substr(stamp, start=15, stop=16),
-#                              '/presence.csv', sep=""))
+  #   stamp <- Sys.time()
+  #   print(stamp)
+  #   dir.create(path=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
+  #                         sep=""))
+  #   
+  #   dir.create(path=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
+  #                         '/', substr(Sys.time(), start=6, stop=10),'.', 
+  #                         substr(stamp, start=12, stop=13), 
+  #                         substr(stamp, start=15, stop=16),
+  #                         sep=""))
+  #   print('Directory Made')
+  #   
+  #   write.csv(pres, file=paste('C:/Users/ben/Documents/Data/Output/', genus, 
+  #                              species, '/', substr(Sys.time(), start=6, stop=10),
+  #                              '.', substr(stamp, start=12, stop=13), 
+  #                              substr(stamp, start=15, stop=16),
+  #                              '/presence.csv', sep=""))
   #   writeRaster(bc.p, 
   #               filename=paste('C:/Users/ben/Documents/Data/Output/', genus, 
   #                              species, '/', substr(stamp, start=6, stop=10),'.', 
@@ -179,16 +185,16 @@ getRP <- function(genus, species, envi) {
   #                              substr(stamp, start=15, stop=16),'.envi',
   #                              sep=""))
   #   print("Mahal Raster made")
-#   writeRaster(mx.p, 
-#               filename=paste('C:/Users/ben/Documents/Data/Output/', genus, 
-#                              species, '/', substr(stamp, start=6, stop=10),'.', 
-#                              substr(stamp, start=12, stop=13), 
-#                              substr(stamp, start=15, stop=16),'/maxent.',
-#                              substr(stamp, start=12, stop=13), 
-#                              substr(stamp, start=15, stop=16),'.envi',
-#                              sep=""))
-#   print("Maxent Raster made")
-#   
+  #   writeRaster(mx.p, 
+  #               filename=paste('C:/Users/ben/Documents/Data/Output/', genus, 
+  #                              species, '/', substr(stamp, start=6, stop=10),'.', 
+  #                              substr(stamp, start=12, stop=13), 
+  #                              substr(stamp, start=15, stop=16),'/maxent.',
+  #                              substr(stamp, start=12, stop=13), 
+  #                              substr(stamp, start=15, stop=16),'.envi',
+  #                              sep=""))
+  #   print("Maxent Raster made")
+  #   
   #   png(width=1280, height=1280, 
   #       filename=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
   #                      '/', substr(stamp, start=6, stop=10),'.', 
@@ -258,15 +264,15 @@ getRP <- function(genus, species, envi) {
   #   dev.off()
   #   print("Mahal plot made")
   #   
-#   png(width=1280, height=1280, 
-#       filename=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
-#                      '/', substr(stamp, start=6, stop=10),'.', 
-#                      substr(stamp, start=12, stop=13), 
-#                      substr(stamp, start=15, stop=16),'/maxent.',
-#                      substr(stamp, start=12, stop=13), 
-#                      substr(stamp, start=15, stop=16),'.png',
-#                      sep=""),
-#       bg='white')
+  #   png(width=1280, height=1280, 
+  #       filename=paste('C:/Users/ben/Documents/Data/Output/', genus, species, 
+  #                      '/', substr(stamp, start=6, stop=10),'.', 
+  #                      substr(stamp, start=12, stop=13), 
+  #                      substr(stamp, start=15, stop=16),'/maxent.',
+  #                      substr(stamp, start=12, stop=13), 
+  #                      substr(stamp, start=15, stop=16),'.png',
+  #                      sep=""),
+  #       bg='white')
   mx.gg <- getggmap(mx.p, pres, realized)
   mx.gg <- mx.gg + ggtitle(paste('Maxent for ', genus, ' ', species, 
                                  '\n Range Filled: ', 
@@ -277,10 +283,10 @@ getRP <- function(genus, species, envi) {
           axis.title.y = element_text(colour='#403E3B',size=20, angle=90),
           axis.text.x = element_text(colour='#403E3B', size=18),
           axis.text.y = element_text(colour='#403E3B', size=18))
-#   print(mx.gg)
-#   dev.off()
-plot(mx.gg)  
-print("Maxent plot made")
+  #  print(mx.gg)
+  #   dev.off()
+  plot(mx.gg)  
+  print("Maxent plot made")
   
   return(all.p)
 }
